@@ -249,7 +249,7 @@ class ActiveLearningPredictor(DefaultPredictor):
                 # whether the model expects BGR inputs or RGB
                 original_image = original_image[:, :, ::-1]
             height, width = original_image.shape[:2]
-            image = self.transform_gen.get_transform(original_image).apply_image(original_image)
+            image = self.aug.get_transform(original_image).apply_image(original_image) # image = self.transform_gen.get_transform(original_image).apply_image(original_image)
             image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
 
             inputs = {"image": image, "height": height, "width": width}

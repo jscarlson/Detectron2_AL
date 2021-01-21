@@ -14,6 +14,8 @@ from detectron2.structures.boxes import Boxes
 from .utils import *
 from ..scoring_utils import elementwise_iou
 
+from detectron2.modeling.box_regression import Box2BoxTransform
+
 __all__ = ['ROIHeadsAL']
 
 
@@ -91,11 +93,11 @@ class ROIHeadsAL(StandardROIHeads):
             del box_features
 
             outputs = FastRCNNOutputs(
-                self.box2box_transform,
+                Box2BoxTransform(weights=self.cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS),
                 pred_class_logits,
                 pred_proposal_deltas,
                 proposals,
-                self.smooth_l1_beta)
+                self.cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA)
         
         return outputs
 
@@ -140,8 +142,8 @@ class ROIHeadsAL(StandardROIHeads):
         """
 
         cur_detections, filtered_indices = \
-            outputs.inference(self.test_score_thresh, self.test_nms_thresh, 
-                              self.test_detections_per_img)
+            outputs.inference(self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST, self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST, 
+                              self.cfg.TEST.DETECTIONS_PER_IMAGE)
 
         pred_probs = outputs.predict_probs()
         # The predicted probabilities are a list of size batch_size
@@ -160,8 +162,8 @@ class ROIHeadsAL(StandardROIHeads):
         """
 
         cur_detections, filtered_indices = \
-            outputs.inference(self.test_score_thresh, self.test_nms_thresh, 
-                              self.test_detections_per_img)
+            outputs.inference(self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST, self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST, 
+                              self.cfg.TEST.DETECTIONS_PER_IMAGE)
 
         for cur_detection in cur_detections:
             cur_detection.scores_al = (1-cur_detection.scores)**2
@@ -174,8 +176,8 @@ class ROIHeadsAL(StandardROIHeads):
         """
 
         cur_detections, filtered_indices = \
-            outputs.inference(self.test_score_thresh, self.test_nms_thresh, 
-                              self.test_detections_per_img)
+            outputs.inference(self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST, self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST, 
+                              self.cfg.TEST.DETECTIONS_PER_IMAGE)
 
         device = cur_detections[0].scores.device
         for cur_detection in cur_detections:
@@ -217,8 +219,9 @@ class ROIHeadsAL(StandardROIHeads):
         
         # Obtain the raw prediction boxes and probabilities
         raw_detections, raw_indices = \
-            raw_outputs.inference(self.test_score_thresh, self.test_nms_thresh, 
-                            self.test_detections_per_img)
+            raw_outputs.inference(self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST, 
+            self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST, 
+            self.cfg.TEST.DETECTIONS_PER_IMAGE)
         
         raw_probs = [prob[idx] for (idx, prob) 
                         in zip(raw_indices, raw_outputs.predict_probs())]

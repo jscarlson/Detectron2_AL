@@ -8,7 +8,7 @@ from itertools import product
 
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.registry import Registry
-from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs
+from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs, fast_rcnn_inference
 from detectron2.modeling.roi_heads.roi_heads import ROIHeads, StandardROIHeads, ROI_HEADS_REGISTRY
 from detectron2.structures.boxes import Boxes
 from .utils import *
@@ -218,10 +218,15 @@ class ROIHeadsAL(StandardROIHeads):
     def _perturbation_scoring(self, raw_outputs, features):
         
         # Obtain the raw prediction boxes and probabilities
+        boxes = raw_outputs.predict_boxes()
+        scores = raw_outputs.predict_probs()
+        image_shapes = raw_outputs.image_shapes
         raw_detections, raw_indices = \
-            raw_outputs.inference(self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST, 
-            self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST, 
-            self.cfg.TEST.DETECTIONS_PER_IMAGE)
+            fast_rcnn_inference(boxes, scores, image_shapes, 
+                self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST, 
+                self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST, 
+                self.cfg.TEST.DETECTIONS_PER_IMAGE
+            )
         
         raw_probs = [prob[idx] for (idx, prob) 
                         in zip(raw_indices, raw_outputs.predict_probs())]
